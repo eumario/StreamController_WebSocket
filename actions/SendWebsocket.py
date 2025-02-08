@@ -83,15 +83,17 @@ class SendWebsocket(ActionBase):
         settings = self.get_settings()
         self.server_ip = settings["host"] = self.host.get_text()
         self.set_settings(settings)
+        self.backend.change_address(self.server_ip, self.server_port)
 
     def on_port_apply(self, _obj):
         settings = self.get_settings()
         self.server_port = settings["port"] = int(self.port.get_text())
         self.set_settings(settings)
+        self.backend.change_address(self.server_ip, self.server_port)
 
     def on_message_apply(self, _obj):
         settings = self.get_settings()
-        self.server_message = settings["message"] = self.message.get_text()
+        self.server_command = settings["message"] = self.message.get_text()
         self.set_settings(settings)
 
     def on_identifier_apply(self, _obj):
