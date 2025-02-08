@@ -12,11 +12,11 @@ class WebsocketBackend(BackendBase):
 
         self.host = self.get_setting("host", "localhost")
         self.port = self.get_setting("port", 8765)
-        self.server = WebsocketServer(host=self.host, port=self.port)
-        self.server.set_fn_new_client(self.handle_new_client)
-        self.server.set_fn_client_left(self.handle_leave_client)
-        self.server.set_fn_message_received(self.handle_message_received)
-        self.server.run_forever(True)
+        self.ws_server = WebsocketServer(host=self.host, port=self.port)
+        self.ws_server.set_fn_new_client(self.handle_new_client)
+        self.ws_server.set_fn_client_left(self.handle_leave_client)
+        self.ws_server.set_fn_message_received(self.handle_message_received)
+        self.ws_server.run_forever(True)
         log.debug(f"WebSocket Server has started, listening at: ws://{self.host}:{self.port}/")
 
     def handle_new_client(self, client, _server):
@@ -29,12 +29,12 @@ class WebsocketBackend(BackendBase):
         log.debug(f"Client ({client['id']}) sent: {message}")
 
     def send_message(self, message : str):
-        self.server.send_message_to_all(message)
+        self.ws_server.send_message_to_all(message)
 
     def on_disconnect(self, conn):
-        #log.debug("WebSocket Server shutdown started...")
+        log.debug("WebSocket Server shutdown started...")
+        self.ws_server.shutdown_gracefully()
         super().on_disconnect(conn)
-        self.server.shutdown_gracefully()
 
     def get_setting(self, key: str, default = None):
         return self.frontend.get_settings().get(key, default)
