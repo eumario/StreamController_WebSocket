@@ -1,60 +1,40 @@
-import asyncio, websockets
-
 from streamcontroller_plugin_tools import BackendBase
+
+from websocket_server import WebsocketServer
 from loguru import logger as log
-from websockets import WebSocketServerProtocol
 
 
 class WebsocketBackend(BackendBase):
     def __init__(self):
         super().__init__()
 
-        self.clients = set()
         self.running = False
-        self.socket = None
 
-        host = self.get_setting("host", "localhost")
-        port = self.get_setting("port", 8765)
+        self.host = self.get_setting("host", "localhost")
+        self.port = self.get_setting("port", 8765)
+        self.server = WebsocketServer(host=self.host, port=self.port)
+        self.server.set_fn_new_client(self.handle_new_client)
+        self.server.set_fn_client_left(self.handle_leave_client)
+        self.server.set_fn_message_received(self.handle_message_received)
+        self.server.run_forever(True)
+        log.debug(f"WebSocket Server has started, listening at: ws://{self.host}:{self.port}/")
 
-        self.start_websocket_server(host, port)
+    def handle_new_client(self, client, _server):
+        log.debug(f"New Client ({client['id']}) has connected.")
 
+    def handle_leave_client(self, client, _server):
+        log.debug(f"Client ({client['id']}) has disconnected.")
 
-    async def handler(self, websocket : WebSocketServerProtocol, path : str):
-        self.clients.add(websocket)
-        log.debug(f"Accepted connection from {websocket}")
-        try:
-            async for message in websocket:
-                log.debug(f"WebSocket Received: {message}")
-        except websockets.exceptions.ConnectionClosed as e:
-            log.debug(f"Client Disconnected: {e}")
-        finally:
-            self.clients.remove(websocket)
+    def handle_message_received(self, client, _server, message):
+        log.debug(f"Client ({client['id']}) sent: {message}")
 
-    async def start_server_async(self, host : str = "localhost", port : int = 8765):
-        self.running = True
-        self.socket = await websockets.serve(self.handler, host, port)
-        log.info(f"Starting WebSocket server at ws://{host}:{port}/")
-        await self.socket.wait_closed()
-
-    def start_websocket_server(self, host : str = "localhost", port : int = 8765):
-        asyncio.run(self.start_server_async(host, port))
-
-    def stop_server(self):
-        self.running = False
-        self.socket.close()
-
-    def send_message(self, message):
-        for client in self.clients:
-            try:
-                client.send(message)
-            except websockets.exceptions.ConnectionClosed:
-                self.clients.remove(client)
+    def send_message(self, message : str):
+        self.server.send_message_to_all(message)
 
     def on_disconnect(self, conn):
-        log.debug("Shutting Down Server...")
-        self.stop_server()
-        log.debug("Server shutdown.")
+        #log.debug("WebSocket Server shutdown started...")
         super().on_disconnect(conn)
+        self.server.shutdown_gracefully()
 
     def get_setting(self, key: str, default = None):
         return self.frontend.get_settings().get(key, default)
