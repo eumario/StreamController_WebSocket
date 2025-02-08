@@ -1,5 +1,5 @@
 # Import StreamController modules
-from data.plugins.dev_eumario_WebSocket.actions.SendWebsocket import SendWebsocket
+
 from src.backend.PluginManager.PluginBase import PluginBase
 from src.backend.PluginManager.ActionHolder import ActionHolder
 
