@@ -36,13 +36,13 @@ class SendWebsocket(ActionBase):
         return super().on_ready()
 
     def on_key_down(self):
-        packet = {'event': "keyDown", 'identifier': self.server_identifier, 'action': self.server_message}
+        packet = {'event': "keyDown", 'identifier': self.server_identifier, 'action': self.server_command}
         if self.server_args != "":
             packet['arguments'] =  self.server_args
         self.plugin_base.backend.send_message(json.dumps(packet))
 
     def on_key_up(self):
-        packet = {'event': "keyUp", 'identifier': self.server_identifier, 'action': self.server_message}
+        packet = {'event': "keyUp", 'identifier': self.server_identifier, 'action': self.server_command}
         if self.server_args != "":
             packet['arguments'] = self.server_args
         self.plugin_base.backend.send_message(json.dumps(packet))
